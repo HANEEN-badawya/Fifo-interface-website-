@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIFO Cache Simulator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0b1220;
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #0ea5a4;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            background: #1b1f2b;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        input {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: none;
+            background: #0b1220;
+            color: white;
+            border: 1px solid #0ea5a4;
+        }
+
+        button {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            background: #0ea5a4;
+            color: #022;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            opacity: 0.8;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .number-queue {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            background: #1b1f2b;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .number-queue span {
+            padding: 8px 12px;
+            border-radius: 4px;
+            background: #0b1220;
+            min-width: 30px;
+            text-align: center;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .number-queue span.current {
+            border-bottom: 3px solid #ef4444;
+            transform: scale(1.1);
+        }
+
+        .number-queue span.done {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        .main-display {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .cache-container {
+            flex: 1;
+            min-width: 300px;
+            background: #1b1f2b;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        #cacheBoxes {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .box {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 6px;
+            background: #0b1220;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .pointer {
+            border: 3px solid #ef4444;
+        }
+
+        .box-label {
+            position: absolute;
+            top: -20px;
+            font-size: 12px;
+            color: #0ea5a4;
+        }
+
+        .info {
+            margin-top: 10px;
+            text-align: left;
+            background: #0b1220;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .history-container {
+            flex: 1;
+            min-width: 200px;
+            background: #1b1f2b;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        #historyList {
+            margin-top: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .history-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 10px;
+            background: #0b1220;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            transition: all 0.3s;
+        }
+
+        .hit {
+            color: #0f0;
+            font-weight: bold;
+        }
+
+        .miss {
+            color: #f80;
+            font-weight: bold;
+        }
+
+        .fifo-pointers {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding: 10px;
+            background: #0b1220;
+            border-radius: 6px;
+        }
+
+        .fifo-pointers div {
+            text-align: center;
+        }
+
+        .fifo-pointers span {
+            font-weight: bold;
+            color: #0ea5a4;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .hit-status {
+            background: rgba(0, 255, 0, 0.1);
+            color: #0f0;
+        }
+
+        .miss-status {
+            background: rgba(255, 136, 0, 0.1);
+            color: #f80;
+        }
+
+        .error {
+            color: #f44336;
+            text-align: center;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FIFO Cache Simulator</h1>
+        
+        <div class="controls">
+            <input type="number" id="cacheSize" placeholder="Cache Size" min="1" max="10" value="4">
+            <button id="setSizeBtn">Set Size</button>
+            <input type="number" id="numberInput" placeholder="Enter a number">
+            <button id="addBtn">Add Number</button>
+            <button id="resetBtn">Reset</button>
+        </div>
+        
+        <div class="number-queue" id="numberQueue">
+            <!-- Numbers will be dynamically added here -->
+        </div>
+        
+        <div class="status" id="statusMessage"></div>
+        
+        <div class="main-display">
+            <div class="cache-container">
+                <h2>Cache</h2>
+                <div id="cacheBoxes">
+                    <!-- Cache boxes will be dynamically added here -->
+                </div>
+                <div class="fifo-pointers">
+                    <div>Pointer: <span id="pointerPosition">0</span></div>
+                </div>
+                <div class="info">
+                    <p>Cache Size: <span id="currentSize">4</span></p>
+                    <p>Numbers Processed: <span id="processedCount">0</span></p>
+                </div>
+            </div>
+            
+            <div class="history-container">
+                <h2>History</h2>
+                <div id="historyList">
+                    <!-- History entries will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // FIFO Cache Class Implementation
+        class FIFOCache {
+            constructor(size = 4) {
+                this.size = size;
+                this.cache = [];
+                this.pointer = 0;
+                this.history = [];
+            }
+
+            add(item) {
+                const hit = this.cache.includes(item);
+                if (!hit) {
+                    if (this.cache.length < this.size) {
+                        this.cache.push(item);
+                    } else {
+                        this.cache[this.pointer] = item;
+                        this.pointer = (this.pointer + 1) % this.size;
+                    }
+                }
+                this.history.push({"item": item, "hit": hit});
+                return hit;
+            }
+
+            reset() {
+                this.cache = [];
+                this.pointer = 0;
+                this.history = [];
+            }
+
+            setSize(size) {
+                this.size = size;
+                this.reset();
+            }
+
+            getState() {
+                return {
+                    "cache": [...this.cache],
+                    "pointer": this.pointer,
+                    "size": this.size,
+                    "history": [...this.history]
+                };
+            }
+        }
+
+        // Initialize cache
+        let fifo = new FIFOCache();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM elements
+            const cacheSizeInput = document.getElementById('cacheSize');
+            const numberInput = document.getElementById('numberInput');
+            const setSizeBtn = document.getElementById('setSizeBtn');
+            const addBtn = document.getElementById('addBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const numberQueue = document.getElementById('numberQueue');
+            const cacheBoxes = document.getElementById('cacheBoxes');
+            const historyList = document.getElementById('historyList');
+            const statusMessage = document.getElementById('statusMessage');
+            const pointerPosition = document.getElementById('pointerPosition');
+            const currentSize = document.getElementById('currentSize');
+            const processedCount = document.getElementById('processedCount');
+            
+            // Load initial state
+            loadState();
+            
+            // Event listeners
+            setSizeBtn.addEventListener('click', setCacheSize);
+            addBtn.addEventListener('click', addNumber);
+            resetBtn.addEventListener('click', resetCache);
+            numberInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addNumber();
+                }
+            });
+            
+            // Set cache size
+            function setCacheSize() {
+                const size = parseInt(cacheSizeInput.value);
+                
+                if (isNaN(size) || size <= 0 || size > 10) {
+                    showError('Please enter a valid cache size (1-10)');
+                    return;
+                }
+                
+                fifo.setSize(size);
+                loadState();
+                showStatus(`Cache size set to ${size}`, 'info');
+            }
+            
+            // Add number to cache
+            function addNumber() {
+                const number = parseInt(numberInput.value);
+                
+                if (isNaN(number)) {
+                    showError('Please enter a valid number');
+                    return;
+                }
+                
+                const hit = fifo.add(number);
+                loadState();
+                
+                // Show hit/miss status
+                if (hit) {
+                    showStatus(`Number ${number} found in cache - HIT`, 'hit');
+                } else {
+                    showStatus(`Number ${number} not in cache - MISS`, 'miss');
+                }
+                
+                // Clear input
+                numberInput.value = '';
+                numberInput.focus();
+            }
+            
+            // Reset cache
+            function resetCache() {
+                fifo.reset();
+                loadState();
+                showStatus('Cache reset successfully', 'info');
+            }
+            
+            // Load current state
+            function loadState() {
+                const state = fifo.getState();
+                renderState(state);
+            }
+            
+            // Render the current state
+            function renderState(state) {
+                // Update cache boxes
+                cacheBoxes.innerHTML = '';
+                
+                // Create boxes for the entire cache size
+                for (let i = 0; i < state.size; i++) {
+                    const box = document.createElement('div');
+                    box.classList.add('box');
+                    
+                    const label = document.createElement('div');
+                    label.classList.add('box-label');
+                    label.textContent = `Slot ${i + 1}`;
+                    box.appendChild(label);
+                    
+                    if (i < state.cache.length && state.cache[i] !== undefined) {
+                        box.textContent = state.cache[i];
+                    }
+                    
+                    // Highlight the pointer position
+                    if (i === state.pointer && state.cache.length > 0) {
+                        box.classList.add('pointer');
+                    }
+                    
+                    cacheBoxes.appendChild(box);
+                }
+                
+                // Update pointer position
+                pointerPosition.textContent = state.pointer + 1;
+                
+                // Update cache size
+                currentSize.textContent = state.size;
+                
+                // Update number queue
+                renderNumberQueue(state.history);
+                
+                // Update history
+                renderHistory(state.history);
+                
+                // Update processed count
+                processedCount.textContent = state.history.length;
+            }
+            
+            // Render the number queue
+            function renderNumberQueue(history) {
+                numberQueue.innerHTML = '';
+                
+                history.forEach(entry => {
+                    const span = document.createElement('span');
+                    span.textContent = entry.item;
+                    
+                    if (entry === history[history.length - 1]) {
+                        span.classList.add('current');
+                    } else {
+                        span.classList.add('done');
+                    }
+                    
+                    numberQueue.appendChild(span);
+                });
+            }
+            
+            // Render history
+            function renderHistory(history) {
+                historyList.innerHTML = '';
+                
+                history.forEach(entry => {
+                    const entryDiv = document.createElement('div');
+                    entryDiv.classList.add('history-entry');
+                    
+                    const numberSpan = document.createElement('span');
+                    numberSpan.textContent = `Number: ${entry.item}`;
+                    
+                    const resultSpan = document.createElement('span');
+                    resultSpan.textContent = entry.hit ? 'HIT' : 'MISS';
+                    resultSpan.classList.add(entry.hit ? 'hit' : 'miss');
+                    
+                    entryDiv.appendChild(numberSpan);
+                    entryDiv.appendChild(resultSpan);
+                    historyList.appendChild(entryDiv);
+                });
+                
+                // Scroll to bottom
+                historyList.scrollTop = historyList.scrollHeight;
+            }
+            
+            // Show status message
+            function showStatus(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = 'status';
+                
+                if (type === 'hit') {
+                    statusMessage.classList.add('hit-status');
+                } else if (type === 'miss') {
+                    statusMessage.classList.add('miss-status');
+                }
+                
+                // Clear status after 3 seconds
+                setTimeout(() => {
+                    statusMessage.textContent = '';
+                    statusMessage.className = 'status';
+                }, 3000);
+            }
+            
+            // Show error message
+            function showError(message) {
+                statusMessage.textContent = message;
+                statusMessage.className = 'status';
+                statusMessage.style.backgroundColor = 'rgba(244, 67, 54, 0.1)';
+                statusMessage.style.color = '#f44336';
+                
+                // Clear error after 3 seconds
+                setTimeout(() => {
+                    statusMessage.textContent = '';
+                    statusMessage.className = 'status';
+                    statusMessage.style.backgroundColor = '';
+                    statusMessage.style.color = '';
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>  
